@@ -1,0 +1,34 @@
+.container {
+  min-height: 100vh;
+  padding: 0 0.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+
+.subtitle {
+  color: #555;
+}
+
+.box {
+  text-align: center;
+  color: #111;
+  display: flex;
+  gap: 0px;
+  flex-direction: column;
+}
+
+.box h2 {
+  margin: 10px;
+}
+
+.box code {
+  font-size: 20px;
+  color: #222;
+}
+
+.muted {
+  color: #222;
+}
