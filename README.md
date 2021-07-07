@@ -1,34 +1,75 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Hits
 
-## Getting Started
+![Hit count](https://hits.vercel.app/USER/REPO.svg) ![Code style](https://img.shields.io/badge/code_style-prettier-ff69b4.svg?style=flat-square) ![License](https://img.shields.io/github/license/radiantly/hits?style=flat-square)
 
-First, run the development server:
+> A no-nonsense hit count badge generator built with Next.js and FaunaDB.
 
-```bash
-npm run dev
-# or
-yarn dev
+## Usage
+
+To use the generated hit count badge, add the following snippet to your readme file.
+
+```md
+![Hit count](https://hits.vercel.app/USER/REPO.svg)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Running locally
 
-You can start editing the page by modifying `pages/index.js`. The page auto-updates as you edit the file.
+```sh
+# Install dependencies
+npm install
 
-[API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.js`.
+# Run local development server on https://localhost:3000/
+npm run dev
+```
 
-The `pages/api` directory is mapped to `/api/*`. Files in this directory are treated as [API routes](https://nextjs.org/docs/api-routes/introduction) instead of React pages.
+## Deployment instructions
 
-## Learn More
+1. Firstly, you'll need to set up the back-end database to store the hit counts.
 
-To learn more about Next.js, take a look at the following resources:
+   1. Head over to https://fauna.org and create an account.
+   2. Create a database (Select US as the region - if your region of choice is different, you may need to change the db connection domain over at [./pages/api/[...path].js](./pages/api/[...path].js)).
+   3. Within the created database, create a collection.
+   4. Next, click `Indexes` on the sidebar and add an index.
+      - Name: `by_path`
+      - Terms: `data.path`
+      - Values: `data.count`
+      - Unique: Checked
+      - Serialized: Checked
+   5. After that, click `Functions` and add a function with the name `getHits`. For the function body, copy and paste the below function:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+      ```fql
+      Query(
+        Lambda(
+          "path",
+          Let(
+            { match: Match(Index("by_path"), Var("path")) },
+            If(
+              Exists(Var("match")),
+              Let(
+                { doc: Get(Var("match")) },
+                Update(Select("ref", Var("doc")), {
+                  data: { count: Add(Select(["data", "count"], Var("doc")), 1) }
+                })
+              ),
+              Create(Collection("hitcount"), {
+                data: { path: Var("path"), count: 1 }
+              })
+            )
+          )
+        )
+      )
+      ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+      This function takes a single argument (the path), and adds it to the database if it does not exist, or increments the count if it does.
 
-## Deploy on Vercel
+   6. Finally, hit `Security` in the sidebar and generate a server secret.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. Set up the front-end:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+   To deploy the Next.js app, you can use a platform like Netlify or Vercel. Add the FaunaDB server secret as an environment variable called `FAUNADB_SECRET`.
+
+   [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/git/external?repository-url=https%3A%2F%2Fgithub.com%2Fradiantly%2Fhits&env=FAUNADB_SECRET&project-name=hits&repository-name=hits)
+
+### License
+
+MIT
